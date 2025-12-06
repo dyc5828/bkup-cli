@@ -14,12 +14,11 @@ Usage:
 
 Operations:
     (default)     Copy file(s) and add backup extension
-    -m, --move    Move file(s) instead of copying
+    -d, --delete  Move file(s) instead of copying (deletes original)
     -r, --restore Restore backup files to original names
 
 Options:
     -t, --timestamp       Add timestamp to backup filename
-    -d, --delete          Delete original after backup
     -e, --extension <ext> Use custom extension (default: .bkup)
     -n, --dry-run         Show what would be done without doing it
     -f, --force           Overwrite existing files without prompting
@@ -27,12 +26,11 @@ Options:
     -v, --version         Show version
 
 Examples:
-    bkup config.yaml              # Creates config.yaml.bkup
-    bkup -m old_script.sh         # Moves to old_script.sh.bkup
+    bkup config.yaml              # Creates config.yaml.bkup (keeps original)
+    bkup -d old_script.sh         # Moves to old_script.sh.bkup (deletes original)
     bkup -r config.yaml.bkup      # Restores to config.yaml
     bkup -t config.yaml           # Creates config.yaml.2024-12-06_143022.bkup
     bkup -n *.txt                 # Preview backup of all .txt files
-    bkup -d old_file.sh           # Backup and delete original
     bkup -e .backup config.yaml   # Creates config.yaml.backup
     bkup -t -e .old script.sh     # Creates script.sh.2024-12-06_143022.old
 EOF
@@ -52,13 +50,12 @@ MODE="copy"
 FORCE=false
 DRY_RUN=false
 TIMESTAMP=false
-DELETE_ORIGINAL=false
 FILES=()
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        -m|--move)
+        -d|--delete)
             MODE="move"
             shift
             ;;
@@ -72,10 +69,6 @@ while [[ $# -gt 0 ]]; do
             ;;
         -t|--timestamp)
             TIMESTAMP=true
-            shift
-            ;;
-        -d|--delete)
-            DELETE_ORIGINAL=true
             shift
             ;;
         -n|--dry-run)
@@ -148,43 +141,25 @@ for file in "${FILES[@]}"; do
                 fi
             fi
 
-            if [[ "$MODE" == "copy" ]]; then
-                if [[ "$DRY_RUN" == true ]]; then
+            if [[ "$DRY_RUN" == true ]]; then
+                if [[ "$MODE" == "copy" ]]; then
                     echo "Would copy '$file' -> '$dest'"
-                    if [[ -d "$file" ]]; then
-                        find "$file" -mindepth 1 | while read -r item; do
-                            echo "  $item"
-                        done
-                    fi
-                    if [[ "$DELETE_ORIGINAL" == true ]]; then
-                        echo "Would delete '$file'"
-                    fi
                 else
+                    echo "Would move '$file' -> '$dest'"
+                fi
+                if [[ -d "$file" ]]; then
+                    find "$file" -mindepth 1 | while read -r item; do
+                        echo "  $item"
+                    done
+                fi
+            else
+                if [[ "$MODE" == "copy" ]]; then
                     if [[ -d "$file" ]]; then
                         cp -r "$file" "$dest"
                     else
                         cp "$file" "$dest"
                     fi
                     echo "Copied '$file' -> '$dest'"
-
-                    # Delete original if requested
-                    if [[ "$DELETE_ORIGINAL" == true ]]; then
-                        if [[ -d "$file" ]]; then
-                            rm -r "$file"
-                        else
-                            rm "$file"
-                        fi
-                        echo "Deleted '$file'"
-                    fi
-                fi
-            else
-                if [[ "$DRY_RUN" == true ]]; then
-                    echo "Would move '$file' -> '$dest'"
-                    if [[ -d "$file" ]]; then
-                        find "$file" -mindepth 1 | while read -r item; do
-                            echo "  $item"
-                        done
-                    fi
                 else
                     mv "$file" "$dest"
                     echo "Moved '$file' -> '$dest'"
