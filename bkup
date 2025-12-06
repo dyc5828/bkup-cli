@@ -142,15 +142,17 @@ for file in "${FILES[@]}"; do
             fi
 
             if [[ "$DRY_RUN" == true ]]; then
-                if [[ "$MODE" == "copy" ]]; then
-                    echo "Would copy '$file' -> '$dest'"
-                else
-                    echo "Would move '$file' -> '$dest'"
-                fi
+                echo "[create] $dest"
                 if [[ -d "$file" ]]; then
-                    find "$file" -mindepth 1 | while read -r item; do
-                        echo "  $item"
-                    done
+                    find "$file" -mindepth 1 | sed 's|^|  + |'
+                fi
+                if [[ "$MODE" == "copy" ]]; then
+                    echo "[keep]   $file"
+                else
+                    echo "[delete] $file"
+                    if [[ -d "$file" ]]; then
+                        find "$file" -mindepth 1 | sed 's|^|  - |'
+                    fi
                 fi
             else
                 if [[ "$MODE" == "copy" ]]; then
@@ -193,7 +195,11 @@ for file in "${FILES[@]}"; do
             fi
 
             if [[ "$DRY_RUN" == true ]]; then
-                echo "Would restore '$file' -> '$dest'"
+                echo "[create] $dest"
+                echo "[delete] $file"
+                if [[ -d "$file" ]]; then
+                    find "$file" -mindepth 1 | sed 's|^|  |'
+                fi
             else
                 mv "$file" "$dest"
                 echo "Restored '$file' -> '$dest'"
