@@ -1,0 +1,218 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+VERSION="1.1.0"
+EXTENSION=".bkup"
+
+usage() {
+    cat <<EOF
+bkup v${VERSION} - Backup files and directories
+
+Usage:
+    bkup [OPTIONS] <file|directory>...
+
+Operations:
+    (default)     Copy file(s) and add backup extension
+    -m, --move    Move file(s) instead of copying
+    -r, --restore Restore backup files to original names
+
+Options:
+    -t, --timestamp       Add timestamp to backup filename
+    -d, --delete          Delete original after backup
+    -e, --extension <ext> Use custom extension (default: .bkup)
+    -n, --dry-run         Show what would be done without doing it
+    -f, --force           Overwrite existing files without prompting
+    -h, --help            Show this help message
+    -v, --version         Show version
+
+Examples:
+    bkup config.yaml              # Creates config.yaml.bkup
+    bkup -m old_script.sh         # Moves to old_script.sh.bkup
+    bkup -r config.yaml.bkup      # Restores to config.yaml
+    bkup -t config.yaml           # Creates config.yaml.2024-12-06_143022.bkup
+    bkup -n *.txt                 # Preview backup of all .txt files
+    bkup -d old_file.sh           # Backup and delete original
+    bkup -e .backup config.yaml   # Creates config.yaml.backup
+    bkup -t -e .old script.sh     # Creates script.sh.2024-12-06_143022.old
+EOF
+}
+
+error() {
+    echo "bkup: error: $1" >&2
+    exit 1
+}
+
+warn() {
+    echo "bkup: warning: $1" >&2
+}
+
+# Default options
+MODE="copy"
+FORCE=false
+DRY_RUN=false
+TIMESTAMP=false
+DELETE_ORIGINAL=false
+FILES=()
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -m|--move)
+            MODE="move"
+            shift
+            ;;
+        -r|--restore)
+            MODE="restore"
+            shift
+            ;;
+        -f|--force)
+            FORCE=true
+            shift
+            ;;
+        -t|--timestamp)
+            TIMESTAMP=true
+            shift
+            ;;
+        -d|--delete)
+            DELETE_ORIGINAL=true
+            shift
+            ;;
+        -n|--dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        -e|--extension)
+            if [[ -z "${2:-}" ]]; then
+                error "option -e requires an argument"
+            fi
+            EXTENSION="$2"
+            # Ensure extension starts with a dot
+            if [[ "$EXTENSION" != .* ]]; then
+                EXTENSION=".$EXTENSION"
+            fi
+            shift 2
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        -v|--version)
+            echo "bkup v${VERSION}"
+            exit 0
+            ;;
+        -*)
+            error "unknown option: $1"
+            ;;
+        *)
+            FILES+=("$1")
+            shift
+            ;;
+    esac
+done
+
+# Check if files were provided
+if [[ ${#FILES[@]} -eq 0 ]]; then
+    usage
+    exit 1
+fi
+
+# Generate timestamp string
+get_timestamp() {
+    date +"%Y-%m-%d_%H%M%S"
+}
+
+# Process each file
+for file in "${FILES[@]}"; do
+    if [[ ! -e "$file" ]]; then
+        warn "'$file' does not exist, skipping"
+        continue
+    fi
+
+    case "$MODE" in
+        copy|move)
+            # Build destination filename
+            if [[ "$TIMESTAMP" == true ]]; then
+                dest="${file}.$(get_timestamp)${EXTENSION}"
+            else
+                dest="${file}${EXTENSION}"
+            fi
+
+            # Check if destination exists (skip for timestamped files as they're unique)
+            if [[ -e "$dest" ]] && [[ "$FORCE" != true ]] && [[ "$DRY_RUN" != true ]]; then
+                read -p "bkup: '$dest' already exists. Overwrite? [y/N] " -n 1 -r
+                echo
+                if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                    echo "Skipped '$file'"
+                    continue
+                fi
+            fi
+
+            if [[ "$MODE" == "copy" ]]; then
+                if [[ "$DRY_RUN" == true ]]; then
+                    echo "Would copy '$file' -> '$dest'"
+                    if [[ "$DELETE_ORIGINAL" == true ]]; then
+                        echo "Would delete '$file'"
+                    fi
+                else
+                    if [[ -d "$file" ]]; then
+                        cp -r "$file" "$dest"
+                    else
+                        cp "$file" "$dest"
+                    fi
+                    echo "Copied '$file' -> '$dest'"
+
+                    # Delete original if requested
+                    if [[ "$DELETE_ORIGINAL" == true ]]; then
+                        if [[ -d "$file" ]]; then
+                            rm -r "$file"
+                        else
+                            rm "$file"
+                        fi
+                        echo "Deleted '$file'"
+                    fi
+                fi
+            else
+                if [[ "$DRY_RUN" == true ]]; then
+                    echo "Would move '$file' -> '$dest'"
+                else
+                    mv "$file" "$dest"
+                    echo "Moved '$file' -> '$dest'"
+                fi
+            fi
+            ;;
+
+        restore)
+            # Check if file has the extension
+            if [[ "$file" != *"$EXTENSION" ]]; then
+                warn "'$file' does not have ${EXTENSION} extension, skipping"
+                continue
+            fi
+
+            # Remove extension to get original name
+            # Also handle timestamp pattern if present
+            dest="${file%$EXTENSION}"
+            # Remove timestamp pattern if present (YYYY-MM-DD_HHMMSS)
+            if [[ "$dest" =~ \.[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{6}$ ]]; then
+                dest="${dest%.[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_[0-9][0-9][0-9][0-9][0-9][0-9]}"
+            fi
+
+            # Check if destination exists
+            if [[ -e "$dest" ]] && [[ "$FORCE" != true ]] && [[ "$DRY_RUN" != true ]]; then
+                read -p "bkup: '$dest' already exists. Overwrite? [y/N] " -n 1 -r
+                echo
+                if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                    echo "Skipped '$file'"
+                    continue
+                fi
+            fi
+
+            if [[ "$DRY_RUN" == true ]]; then
+                echo "Would restore '$file' -> '$dest'"
+            else
+                mv "$file" "$dest"
+                echo "Restored '$file' -> '$dest'"
+            fi
+            ;;
+    esac
+done
