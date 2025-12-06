@@ -14,10 +14,10 @@ brew tap dyc5828/tap
 brew install bkup
 ```
 
-Or install directly:
+Or via script:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/dyc5828/bkup-cli/main/bkup | sudo install -m 755 /dev/stdin /usr/local/bin/bkup
+curl -fsSL https://raw.githubusercontent.com/dyc5828/bkup-cli/main/install.sh | bash
 ```
 
 ## Usage
