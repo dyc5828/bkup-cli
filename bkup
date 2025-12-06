@@ -151,6 +151,11 @@ for file in "${FILES[@]}"; do
             if [[ "$MODE" == "copy" ]]; then
                 if [[ "$DRY_RUN" == true ]]; then
                     echo "Would copy '$file' -> '$dest'"
+                    if [[ -d "$file" ]]; then
+                        find "$file" -mindepth 1 | while read -r item; do
+                            echo "  $item"
+                        done
+                    fi
                     if [[ "$DELETE_ORIGINAL" == true ]]; then
                         echo "Would delete '$file'"
                     fi
@@ -175,6 +180,11 @@ for file in "${FILES[@]}"; do
             else
                 if [[ "$DRY_RUN" == true ]]; then
                     echo "Would move '$file' -> '$dest'"
+                    if [[ -d "$file" ]]; then
+                        find "$file" -mindepth 1 | while read -r item; do
+                            echo "  $item"
+                        done
+                    fi
                 else
                     mv "$file" "$dest"
                     echo "Moved '$file' -> '$dest'"
