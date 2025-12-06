@@ -26,23 +26,30 @@ curl -fsSL https://raw.githubusercontent.com/dyc5828/bkup-cli/main/install.sh | 
 # Copy (default) - keeps original
 bkup file.txt                    # file.txt.bkup
 
+
 # Move (delete original)
 bkup -d file.txt                 # moves to file.txt.bkup
+
 
 # Restore
 bkup -r file.txt.bkup            # restores to file.txt
 
+
 # With timestamp
 bkup -t file.txt                 # file.txt.2024-12-06_143022.bkup
+
 
 # Custom extension
 bkup -e .backup file.txt         # file.txt.backup
 
+
 # Dry run (preview)
 bkup -n *.txt                    # shows what would happen
 
+
 # Force overwrite
 bkup -f file.txt                 # overwrites existing .bkup
+
 
 # Directories work too
 bkup my_folder/                  # recursively copies to my_folder.bkup
