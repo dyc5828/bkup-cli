@@ -115,6 +115,11 @@ get_timestamp() {
     date +"%Y-%m-%d_%H%M%S"
 }
 
+# Show dry-run indicator
+if [[ "$DRY_RUN" == true ]]; then
+    echo "[dry-run]"
+fi
+
 # Process each file
 for file in "${FILES[@]}"; do
     if [[ ! -e "$file" ]]; then
@@ -142,14 +147,12 @@ for file in "${FILES[@]}"; do
             fi
 
             if [[ "$DRY_RUN" == true ]]; then
-                echo "[create] $dest"
+                echo "+ $dest"
                 if [[ -d "$file" ]]; then
                     find "$file" -mindepth 1 | sed 's|^|  + |'
                 fi
-                if [[ "$MODE" == "copy" ]]; then
-                    echo "[keep]   $file"
-                else
-                    echo "[delete] $file"
+                if [[ "$MODE" == "move" ]]; then
+                    echo "- $file"
                     if [[ -d "$file" ]]; then
                         find "$file" -mindepth 1 | sed 's|^|  - |'
                     fi
@@ -161,10 +164,17 @@ for file in "${FILES[@]}"; do
                     else
                         cp "$file" "$dest"
                     fi
-                    echo "Copied '$file' -> '$dest'"
+                    echo "+ $dest"
+                    if [[ -d "$file" ]]; then
+                        find "$dest" -mindepth 1 | sed 's|^|  + |'
+                    fi
                 else
                     mv "$file" "$dest"
-                    echo "Moved '$file' -> '$dest'"
+                    echo "+ $dest"
+                    if [[ -d "$dest" ]]; then
+                        find "$dest" -mindepth 1 | sed 's|^|  + |'
+                    fi
+                    echo "- $file"
                 fi
             fi
             ;;
@@ -195,14 +205,21 @@ for file in "${FILES[@]}"; do
             fi
 
             if [[ "$DRY_RUN" == true ]]; then
-                echo "[create] $dest"
-                echo "[delete] $file"
+                echo "+ $dest"
                 if [[ -d "$file" ]]; then
-                    find "$file" -mindepth 1 | sed 's|^|  |'
+                    find "$file" -mindepth 1 | sed 's|^|  + |'
+                fi
+                echo "- $file"
+                if [[ -d "$file" ]]; then
+                    find "$file" -mindepth 1 | sed 's|^|  - |'
                 fi
             else
                 mv "$file" "$dest"
-                echo "Restored '$file' -> '$dest'"
+                echo "+ $dest"
+                if [[ -d "$dest" ]]; then
+                    find "$dest" -mindepth 1 | sed 's|^|  + |'
+                fi
+                echo "- $file"
             fi
             ;;
     esac
