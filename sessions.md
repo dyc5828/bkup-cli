@@ -38,3 +38,20 @@
 4. Get SHA256: `curl -sL https://github.com/dyc5828/bkup-cli/archive/refs/tags/vX.Y.Z.tar.gz | shasum -a 256`
 5. Update `homebrew-tap/Formula/bkup.rb` with new version and SHA256
 6. Push homebrew-tap
+
+## 2025-12-18: Output & Restore Enhancements
+
+### Simplified Output Format
+- Replaced verbose labels with git-style `+`/`-` markers
+- Copy mode: `+ file.bkup` (silence means original kept)
+- Move mode: `+ file.bkup` and `- file`
+- Restore mode: `+ original` and `- original.bkup`
+- Dry-run shows `[dry-run]` header once at start
+- Applies to both dry-run and actual operations
+
+### Smarter Restore
+- `bkup -r file.txt` now auto-finds `file.txt.bkup`
+- Falls back to timestamped backups if exact match not found
+- Picks most recent when multiple timestamped backups exist
+- Works with custom extensions (`-e`)
+- Shows warning if no backup found
