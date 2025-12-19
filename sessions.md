@@ -55,3 +55,26 @@
 - Picks most recent when multiple timestamped backups exist
 - Works with custom extensions (`-e`)
 - Shows warning if no backup found
+
+## 2025-12-19: Test Suite
+
+### Added Test Suite
+- Created `test_bkup.sh` with 23 tests covering all functionality
+- Run via `bkup --test` or `./test_bkup.sh`
+- Tests organized by category tags for easy scanning:
+
+| Category  | Tests |
+|-----------|-------|
+| cli       | --version, --help, no args, unknown option |
+| copy      | basic copy, directory, multiple files |
+| move      | deletes original, directory move |
+| restore   | basic, by original name, strips timestamp, finds timestamped, directory, custom extension |
+| timestamp | adds YYYY-MM-DD_HHMMSS |
+| extension | custom extension, auto-adds dot |
+| dry-run   | no changes, shows +/- markers |
+| force     | overwrites existing |
+| error     | nonexistent file warning |
+
+### Cleanup
+- Removed `Formula/` directory from this repo
+- Formula now maintained only in `homebrew-tap` repo
