@@ -122,7 +122,8 @@ fi
 
 # Process each file
 for file in "${FILES[@]}"; do
-    if [[ ! -e "$file" ]]; then
+    # For copy/move, file must exist. For restore, we handle it in the case block.
+    if [[ "$MODE" != "restore" ]] && [[ ! -e "$file" ]]; then
         warn "'$file' does not exist, skipping"
         continue
     fi
@@ -180,9 +181,30 @@ for file in "${FILES[@]}"; do
             ;;
 
         restore)
-            # Check if file has the extension
+            # If file doesn't have the extension, try to find a backup
             if [[ "$file" != *"$EXTENSION" ]]; then
-                warn "'$file' does not have ${EXTENSION} extension, skipping"
+                # Look for exact backup (file.bkup)
+                if [[ -e "${file}${EXTENSION}" ]]; then
+                    file="${file}${EXTENSION}"
+                else
+                    # Look for timestamped backups (file.YYYY-MM-DD_HHMMSS.bkup)
+                    # Use most recent if multiple exist
+                    latest=""
+                    for f in "${file}".????-??-??_??????"${EXTENSION}"; do
+                        [[ -e "$f" ]] && latest="$f"
+                    done
+                    if [[ -n "$latest" ]]; then
+                        file="$latest"
+                    else
+                        warn "no backup found for '$file'"
+                        continue
+                    fi
+                fi
+            fi
+
+            # Verify the backup file exists
+            if [[ ! -e "$file" ]]; then
+                warn "'$file' does not exist, skipping"
                 continue
             fi
 
