@@ -1,0 +1,25 @@
+#compdef bkup
+
+# Zsh completion for bkup - backup files and directories
+
+_bkup() {
+    local -a opts
+    local curcontext="$curcontext" state line
+
+    opts=(
+        '(-d --delete -r --restore)'{-d,--delete}'[Move files instead of copying (deletes original)]'
+        '(-d --delete -r --restore)'{-r,--restore}'[Restore backup files to original names]'
+        '(-t --timestamp)'{-t,--timestamp}'[Add timestamp to backup filename]'
+        '(-e --extension)'{-e,--extension}'[Use custom extension]:extension:'
+        '(-n --dry-run)'{-n,--dry-run}'[Show what would be done without doing it]'
+        '(-f --force)'{-f,--force}'[Overwrite existing files without prompting]'
+        '(-h --help)'{-h,--help}'[Show help message]'
+        '(-v --version)'{-v,--version}'[Show version]'
+        '--test[Run test suite]'
+        '*:file or directory:_files'
+    )
+
+    _arguments -s -S $opts
+}
+
+_bkup "$@"
