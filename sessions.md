@@ -78,3 +78,30 @@
 ### Cleanup
 - Removed `Formula/` directory from this repo
 - Formula now maintained only in `homebrew-tap` repo
+
+## 2025-12-19: Zsh Completions (v1.3.0)
+
+### Added
+- `completions/_bkup` - Zsh tab completion for all flags and file/directory arguments
+
+### Completions Support
+| Flag | Completion Behavior |
+|------|---------------------|
+| `-d, --delete` | Mutually exclusive with `-r` |
+| `-r, --restore` | Mutually exclusive with `-d` |
+| `-t, --timestamp` | Toggle |
+| `-e, --extension` | Expects extension argument |
+| `-n, --dry-run` | Toggle |
+| `-f, --force` | Toggle |
+| `-h, --help` | Toggle |
+| `-v, --version` | Toggle |
+| `--test` | Toggle |
+| `*` | Files and directories |
+
+### Homebrew Integration
+- Updated formula: `zsh_completion.install "completions/_bkup"`
+- Completions auto-install to `$(brew --prefix)/share/zsh/site-functions/_bkup`
+- Users get completions automatically on `brew install bkup`
+
+### Released v1.3.0
+- SHA256: `be4864941aabfe302a96dce6480ec7e399814de3b771c290dab0f1dc89377c7e`
